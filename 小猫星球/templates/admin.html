@@ -1,0 +1,1679 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>流浪猫领养中心 - 管理后台</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='admin-style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo">
+        <span>🐱</span>
+        <span>流浪猫领养中心 - 管理后台</span>
+      </div>
+      <div class="user-info">
+        <span class="user-role">管理员</span>
+        <span id="username-display"></span>
+        <button
+          class="btn btn-secondary"
+          onclick="window.location.href = '/main'"
+        >
+          返回首页
+        </button>
+        <button class="logout-btn" onclick="logout()">退出登录</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- 统计数据卡片 -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">🐱</div>
+          <div class="stat-info">
+            <h3 id="totalCats">0</h3>
+            <p>总猫咪数量</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <h3 id="totalUsers">0</h3>
+            <p>总用户数量</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📝</div>
+          <div class="stat-info">
+            <h3 id="totalApplications">0</h3>
+            <p>总申请数量</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📅</div>
+          <div class="stat-info">
+            <h3 id="totalAppointments">0</h3>
+            <p>总预约数量</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 标签页导航 -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('cats')">
+          猫咪管理
+        </button>
+        <button class="tab-btn" onclick="switchTab('applications')">
+          领养申请
+        </button>
+        <button class="tab-btn" onclick="switchTab('appointments')">
+          预约管理
+        </button>
+        <button class="tab-btn" onclick="switchTab('users')">用户管理</button>
+      </div>
+
+      <!-- 猫咪管理面板 -->
+      <div id="catsTab" class="tab-panel active">
+        <div class="panel-header">
+          <h2>猫咪信息管理</h2>
+          <div class="action-group">
+            <input
+              type="text"
+              id="catSearch"
+              placeholder="搜索猫咪..."
+              class="search-input"
+              onkeyup="searchCats()"
+            />
+            <button class="btn btn-primary" onclick="showAddCatModal()">
+              + 添加猫咪
+            </button>
+            <button class="btn btn-secondary" onclick="showBatchAddModal()">
+              📦 批量添加
+            </button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>照片</th>
+                <th>名字</th>
+                <th>编号</th>
+                <th>品种</th>
+                <th>种类</th>
+                <th>年龄</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="catsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 领养申请管理面板 -->
+      <div id="applicationsTab" class="tab-panel">
+        <div class="panel-header">
+          <h2>领养申请管理</h2>
+          <div class="filter-group">
+            <select
+              id="applicationStatusFilter"
+              onchange="filterApplications()"
+            >
+              <option value="all">全部状态</option>
+              <option value="pending">待审核</option>
+              <option value="approved">已通过</option>
+              <option value="rejected">已拒绝</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>猫咪</th>
+                <th>申请人</th>
+                <th>姓名</th>
+                <th>年龄</th>
+                <th>住房</th>
+                <th>养宠经验</th>
+                <th>条款</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="applicationsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 预约管理面板 -->
+      <div id="appointmentsTab" class="tab-panel">
+        <div class="panel-header">
+          <h2>预约管理</h2>
+          <div class="filter-group">
+            <input
+              type="date"
+              id="appointmentDateFilter"
+              onchange="filterAppointments()"
+            />
+            <select
+              id="appointmentStatusFilter"
+              onchange="filterAppointments()"
+            >
+              <option value="all">全部状态</option>
+              <option value="pending">待确认</option>
+              <option value="confirmed">已确认</option>
+              <option value="completed">已完成</option>
+              <option value="cancelled">已取消</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>猫咪</th>
+                <th>领养人</th>
+                <th>申请人</th>
+                <th>预约日期</th>
+                <th>时间段</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="appointmentsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 用户管理面板 -->
+      <div id="usersTab" class="tab-panel">
+        <div class="panel-header">
+          <h2>用户管理</h2>
+        </div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>用户名</th>
+                <th>邮箱</th>
+                <th>角色</th>
+                <th>申请数量</th>
+                <th>预约数量</th>
+                <th>注册时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="usersTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 添加/编辑猫咪模态框 -->
+    <div id="catModal" class="modal">
+      <div class="modal-content modal-lg">
+        <span class="close-btn" onclick="closeCatModal()">&times;</span>
+        <h2 id="catModalTitle">添加猫咪</h2>
+        <form
+          id="catForm"
+          onsubmit="
+            event.preventDefault();
+            saveCat();
+          "
+        >
+          <input type="hidden" id="catId" />
+
+          <div class="form-group">
+            <label>名字 *</label>
+            <input type="text" id="catName" required placeholder="例如：橘子" />
+          </div>
+
+          <div class="form-group">
+            <label>编号 *</label>
+            <input
+              type="text"
+              id="catCode"
+              required
+              placeholder="例如：CAT001"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>品种</label>
+              <input type="text" id="catBreed" placeholder="例如：橘猫" />
+            </div>
+
+            <div class="form-group">
+              <label>种类分类</label>
+              <input
+                type="text"
+                id="catCategory"
+                placeholder="例如：橘猫、布偶等"
+              />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>年龄</label>
+              <input type="text" id="catAge" placeholder="例如：2个月" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>性格特点</label>
+            <textarea
+              id="catPersonality"
+              rows="3"
+              placeholder="描述猫咪的性格特点..."
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>生活习性</label>
+            <textarea
+              id="catHabits"
+              rows="3"
+              placeholder="描述猫咪的生活习性..."
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>图片URL</label>
+            <input type="url" id="catImageUrl" placeholder="https://..." />
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeCatModal()"
+            >
+              取消
+            </button>
+            <button type="submit" class="btn btn-primary">保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 批量添加猫咪模态框 -->
+    <div id="batchCatModal" class="modal">
+      <div class="modal-content modal-lg">
+        <span class="close-btn" onclick="closeBatchCatModal()">&times;</span>
+        <h2>批量添加猫咪</h2>
+        <p class="info-text">请输入JSON格式的猫咪数据，每行一个猫咪对象。</p>
+        <textarea
+          id="batchCatData"
+          rows="10"
+          class="batch-textarea"
+          placeholder='[\n    {"name": "橘子", "code": "CAT001", "breed": "橘猫", "age": "2个月", "personality": "活泼好动", "habits": "喜欢玩耍", "image_url": "https://...", "category": "橘猫"}\n]'
+        ></textarea>
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeBatchCatModal()"
+          >
+            取消
+          </button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="batchAddCats()"
+          >
+            批量添加
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 审核申请模态框 -->
+    <div id="reviewModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeReviewModal()">&times;</span>
+        <h2>审核领养申请</h2>
+        <div id="reviewContent"></div>
+      </div>
+    </div>
+
+    <!-- 申请详情模态框 -->
+    <div id="applicationDetailModal" class="modal">
+      <div class="modal-content modal-lg">
+        <span class="close-btn" onclick="closeApplicationDetailModal()"
+          >&times;</span
+        >
+        <h2>申请详情</h2>
+        <div id="applicationDetailContent"></div>
+      </div>
+    </div>
+
+    <!-- 预约详情模态框 -->
+    <div id="appointmentDetailModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeAppointmentDetailModal()"
+          >&times;</span
+        >
+        <h2>预约详情</h2>
+        <div id="appointmentDetailContent"></div>
+      </div>
+    </div>
+
+    <!-- 编辑预约模态框 -->
+    <div id="editAppointmentModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeEditAppointmentModal()"
+          >&times;</span
+        >
+        <h2>修改预约时间</h2>
+        <div id="editAppointmentContent"></div>
+      </div>
+    </div>
+
+    <!-- 用户详情模态框 -->
+    <div id="userDetailModal" class="modal">
+      <div class="modal-content modal-lg">
+        <span class="close-btn" onclick="closeUserDetailModal()">&times;</span>
+        <h2>用户详情</h2>
+        <div id="userDetailContent"></div>
+      </div>
+    </div>
+
+    <script>
+      // 全局变量
+      var allCats = [];
+      var allApplications = [];
+      var allAppointments = [];
+      var allUsers = [];
+      var allCategories = [];
+      var currentUserId = null;
+
+      // 检查登录状态
+      function checkLogin() {
+        fetch("/api/check_login", {
+          credentials: "include",
+        })
+          .then(function (response) {
+            if (response.status === 401) {
+              window.location.href = "/";
+            }
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.success) {
+              document.getElementById("username-display").textContent =
+                data.username;
+              currentUserId = data.user_id;
+              if (data.role !== "admin") {
+                window.location.href = "/main";
+              }
+              loadStats();
+              loadCats();
+              loadApplications();
+              loadAppointments();
+              loadUsers();
+              loadCategories();
+            }
+          })
+          .catch(function (error) {
+            console.error("Error:", error);
+            window.location.href = "/";
+          });
+      }
+
+      function logout() {
+        fetch("/api/logout", {
+          method: "POST",
+          credentials: "include",
+        }).then(function () {
+          window.location.href = "/";
+        });
+      }
+
+      function loadStats() {
+        fetch("/api/admin/stats", {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            document.getElementById("totalCats").textContent = data.total_cats;
+            document.getElementById("totalUsers").textContent =
+              data.total_users;
+            document.getElementById("totalApplications").textContent =
+              data.total_applications;
+            document.getElementById("totalAppointments").textContent =
+              data.total_appointments;
+          });
+      }
+
+      function loadCategories() {
+        fetch("/api/admin/categories", {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            allCategories = data;
+          });
+      }
+
+      function loadCats() {
+        fetch("/api/cats", {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (cats) {
+            allCats = cats;
+            renderCatsTable(cats);
+          });
+      }
+
+      function renderCatsTable(cats) {
+        var tbody = document.getElementById("catsTableBody");
+        if (cats.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="8" style="text-align: center;">暂无猫咪数据</td></tr>';
+          return;
+        }
+
+        var html = "";
+        for (var i = 0; i < cats.length; i++) {
+          var cat = cats[i];
+          html +=
+            "<tr>" +
+            "<td>" +
+            cat.id +
+            "</td>" +
+            '<td><img src="' +
+            (cat.image_url || "https://img.icons8.com/color/240/cat.png") +
+            '" alt="' +
+            cat.name +
+            '" class="cat-thumb" onerror="this.src=\'https://img.icons8.com/color/240/cat.png\'"></td>' +
+            "<td>" +
+            cat.name +
+            "</td>" +
+            "<td>" +
+            cat.code +
+            "</td>" +
+            "<td>" +
+            (cat.breed || "未知") +
+            "</td>" +
+            '<td><span class="category-tag">' +
+            (cat.category || "普通") +
+            "</span></td>" +
+            "<td>" +
+            (cat.age || "未知") +
+            "</td>" +
+            '<td class="action-btns">' +
+            '<button class="btn-edit" onclick="showEditCatModal(' +
+            cat.id +
+            ')">编辑</button>' +
+            '<button class="btn-delete" onclick="deleteCat(' +
+            cat.id +
+            ')">删除</button>' +
+            "</td>" +
+            "</tr>";
+        }
+        tbody.innerHTML = html;
+      }
+
+      function searchCats() {
+        var keyword = document.getElementById("catSearch").value.toLowerCase();
+        var filtered = [];
+        for (var i = 0; i < allCats.length; i++) {
+          var cat = allCats[i];
+          if (
+            cat.name.toLowerCase().includes(keyword) ||
+            cat.code.toLowerCase().includes(keyword) ||
+            (cat.breed && cat.breed.toLowerCase().includes(keyword)) ||
+            (cat.category && cat.category.toLowerCase().includes(keyword))
+          ) {
+            filtered.push(cat);
+          }
+        }
+        renderCatsTable(filtered);
+      }
+
+      function showAddCatModal() {
+        document.getElementById("catModalTitle").textContent = "添加猫咪";
+        document.getElementById("catForm").reset();
+        document.getElementById("catId").value = "";
+        document.getElementById("catModal").style.display = "block";
+      }
+
+      function showEditCatModal(catId) {
+        var cat = null;
+        for (var i = 0; i < allCats.length; i++) {
+          if (allCats[i].id == catId) {
+            cat = allCats[i];
+            break;
+          }
+        }
+        document.getElementById("catModalTitle").textContent = "编辑猫咪信息";
+        document.getElementById("catId").value = cat.id;
+        document.getElementById("catName").value = cat.name;
+        document.getElementById("catCode").value = cat.code;
+        document.getElementById("catBreed").value = cat.breed || "";
+        document.getElementById("catCategory").value = cat.category || "";
+        document.getElementById("catAge").value = cat.age || "";
+        document.getElementById("catPersonality").value = cat.personality || "";
+        document.getElementById("catHabits").value = cat.habits || "";
+        document.getElementById("catImageUrl").value = cat.image_url || "";
+        document.getElementById("catModal").style.display = "block";
+      }
+
+      function saveCat() {
+        var catId = document.getElementById("catId").value;
+        var catData = {
+          name: document.getElementById("catName").value,
+          code: document.getElementById("catCode").value,
+          breed: document.getElementById("catBreed").value,
+          category: document.getElementById("catCategory").value,
+          age: document.getElementById("catAge").value,
+          personality: document.getElementById("catPersonality").value,
+          habits: document.getElementById("catHabits").value,
+          image_url: document.getElementById("catImageUrl").value,
+        };
+
+        if (!catData.name || !catData.code) {
+          alert("名字和编号为必填项");
+          return;
+        }
+
+        var url = catId ? "/api/cats/" + catId : "/api/cats";
+        var method = catId ? "PUT" : "POST";
+
+        fetch(url, {
+          method: method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(catData),
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.success) {
+              alert(catId ? "猫咪信息更新成功" : "猫咪添加成功");
+              closeCatModal();
+              loadCats();
+              loadStats();
+              loadCategories();
+            } else {
+              alert(data.message);
+            }
+          });
+      }
+
+      function deleteCat(catId) {
+        if (confirm("确定要删除这只猫咪吗？此操作不可恢复！")) {
+          fetch("/api/cats/" + catId, {
+            method: "DELETE",
+            credentials: "include",
+          })
+            .then(function (response) {
+              return response.json();
+            })
+            .then(function (data) {
+              if (data.success) {
+                alert("猫咪删除成功");
+                loadCats();
+                loadStats();
+                loadCategories();
+              } else {
+                alert(data.message);
+              }
+            });
+        }
+      }
+
+      function showBatchAddModal() {
+        document.getElementById("batchCatData").value =
+          '[\n    {"name": "示例猫", "code": "CATxxx", "breed": "橘猫", "age": "2个月", "personality": "性格描述", "habits": "习性描述", "image_url": "https://...", "category": "橘猫"}\n]';
+        document.getElementById("batchCatModal").style.display = "block";
+      }
+
+      function batchAddCats() {
+        try {
+          var catsData = JSON.parse(
+            document.getElementById("batchCatData").value,
+          );
+          if (!Array.isArray(catsData)) {
+            alert("数据必须是数组格式");
+            return;
+          }
+
+          fetch("/api/admin/cats/batch", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({ cats: catsData }),
+          })
+            .then(function (response) {
+              return response.json();
+            })
+            .then(function (data) {
+              if (data.success) {
+                alert(data.message);
+                closeBatchCatModal();
+                loadCats();
+                loadStats();
+                loadCategories();
+              } else {
+                alert(data.message);
+              }
+            });
+        } catch (e) {
+          alert("JSON格式错误：" + e.message);
+        }
+      }
+
+      function loadApplications(filter) {
+        if (filter === undefined) filter = "all";
+        var url = "/api/admin/applications";
+        if (filter !== "all") {
+          url += "?status=" + filter;
+        }
+
+        fetch(url, {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (applications) {
+            allApplications = applications;
+            renderApplicationsTable(applications);
+          });
+      }
+
+      function renderApplicationsTable(applications) {
+        var tbody = document.getElementById("applicationsTableBody");
+        if (applications.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="10" style="text-align: center;">暂无申请数据</td></tr>';
+          return;
+        }
+
+        var html = "";
+        for (var i = 0; i < applications.length; i++) {
+          var app = applications[i];
+          var statusText =
+            app.status === "pending"
+              ? "待审核"
+              : app.status === "approved"
+                ? "已通过"
+                : "已拒绝";
+          var statusClass = "status-" + app.status;
+
+          html +=
+            "<tr>" +
+            "<td>" +
+            app.id +
+            "</td>" +
+            "<td>" +
+            app.cat_name +
+            " (" +
+            app.code +
+            ")</td>" +
+            "<td>" +
+            app.username +
+            "</td>" +
+            "<td>" +
+            app.full_name +
+            "</td>" +
+            "<td>" +
+            app.age +
+            "</td>" +
+            "<td>" +
+            app.housing +
+            "</td>" +
+            "<td>" +
+            (app.pet_experience ? "有" : "无") +
+            "</td>" +
+            "<td>" +
+            (app.agree_visit ? "✓回访 " : "") +
+            (app.agree_neuter ? "✓绝育" : "") +
+            "</td>" +
+            '<td><span class="status-badge ' +
+            statusClass +
+            '">' +
+            statusText +
+            "</span></td>" +
+            '<td class="action-btns">' +
+            '<button class="btn-view" onclick="showApplicationDetail(' +
+            app.id +
+            ')">查看</button>';
+
+          if (app.status === "pending") {
+            html +=
+              '<button class="btn-edit" onclick="showReviewModal(' +
+              app.id +
+              ')">审核</button>';
+          }
+
+          html +=
+            '<button class="btn-delete" onclick="deleteApplication(' +
+            app.id +
+            ')">删除</button>' +
+            "</td>" +
+            "</tr>";
+        }
+        tbody.innerHTML = html;
+      }
+
+      function filterApplications() {
+        var filter = document.getElementById("applicationStatusFilter").value;
+        loadApplications(filter);
+      }
+
+      function showApplicationDetail(applicationId) {
+        fetch("/api/admin/applications/" + applicationId, {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (app) {
+            var statusText =
+              app.status === "pending"
+                ? "待审核"
+                : app.status === "approved"
+                  ? "已通过"
+                  : "已拒绝";
+            var statusClass = "status-" + app.status;
+
+            var content = document.getElementById("applicationDetailContent");
+            content.innerHTML =
+              '<div class="detail-card">' +
+              "<h3>申请人信息</h3>" +
+              "<p><strong>用户名：</strong> " +
+              app.username +
+              "</p>" +
+              "<p><strong>姓名：</strong> " +
+              app.full_name +
+              "</p>" +
+              "<p><strong>年龄：</strong> " +
+              app.age +
+              "</p>" +
+              "<p><strong>职业：</strong> " +
+              (app.occupation || "未提供") +
+              "</p>" +
+              "<p><strong>住房情况：</strong> " +
+              app.housing +
+              "</p>" +
+              "<p><strong>养宠经验：</strong> " +
+              (app.pet_experience || "无") +
+              "</p>" +
+              "<p><strong>同意回访：</strong> " +
+              (app.agree_visit ? "是" : "否") +
+              "</p>" +
+              "<p><strong>同意绝育：</strong> " +
+              (app.agree_neuter ? "是" : "否") +
+              "</p>" +
+              "<h3>申请猫咪</h3>" +
+              "<p><strong>猫咪：</strong> " +
+              app.cat_name +
+              " (" +
+              app.code +
+              ")</p>" +
+              "<p><strong>品种：</strong> " +
+              app.breed +
+              "</p>" +
+              "<p><strong>种类：</strong> " +
+              app.category +
+              "</p>" +
+              "<h3>申请状态</h3>" +
+              '<p><strong>状态：</strong> <span class="status-badge ' +
+              statusClass +
+              '">' +
+              statusText +
+              "</span></p>" +
+              "<p><strong>提交时间：</strong> " +
+              new Date(app.submitted_at).toLocaleString() +
+              "</p>";
+
+            if (app.reviewed_at) {
+              content.innerHTML +=
+                "<p><strong>审核时间：</strong> " +
+                new Date(app.reviewed_at).toLocaleString() +
+                "</p>";
+            }
+            if (app.admin_remark) {
+              content.innerHTML +=
+                "<p><strong>审核备注：</strong> " + app.admin_remark + "</p>";
+            }
+
+            content.innerHTML += "</div>";
+
+            document.getElementById("applicationDetailModal").style.display =
+              "block";
+          });
+      }
+
+      function showReviewModal(applicationId) {
+        var app = null;
+        for (var i = 0; i < allApplications.length; i++) {
+          if (allApplications[i].id == applicationId) {
+            app = allApplications[i];
+            break;
+          }
+        }
+
+        var content = document.getElementById("reviewContent");
+        content.innerHTML =
+          '<div class="detail-card">' +
+          "<h3>申请人信息</h3>" +
+          "<p><strong>用户名：</strong> " +
+          app.username +
+          "</p>" +
+          "<p><strong>姓名：</strong> " +
+          app.full_name +
+          "</p>" +
+          "<p><strong>年龄：</strong> " +
+          app.age +
+          "</p>" +
+          "<p><strong>职业：</strong> " +
+          (app.occupation || "未提供") +
+          "</p>" +
+          "<p><strong>住房情况：</strong> " +
+          app.housing +
+          "</p>" +
+          "<p><strong>养宠经验：</strong> " +
+          (app.pet_experience || "无") +
+          "</p>" +
+          "<p><strong>同意回访：</strong> " +
+          (app.agree_visit ? "是" : "否") +
+          "</p>" +
+          "<p><strong>同意绝育：</strong> " +
+          (app.agree_neuter ? "是" : "否") +
+          "</p>" +
+          "<h3>申请猫咪</h3>" +
+          "<p><strong>猫咪：</strong> " +
+          app.cat_name +
+          " (" +
+          app.code +
+          ")</p>" +
+          "<p><strong>品种：</strong> " +
+          app.breed +
+          "</p>" +
+          "<p><strong>种类：</strong> " +
+          app.category +
+          "</p>" +
+          '<div class="form-group" style="margin-top: 20px;">' +
+          "<label>审核备注：</label>" +
+          '<textarea id="reviewRemark" rows="3" placeholder="请输入审核意见..."></textarea>' +
+          "</div>" +
+          '<div class="form-actions">' +
+          '<button class="btn btn-secondary" onclick="closeReviewModal()">取消</button>' +
+          '<button class="btn btn-danger" onclick="reviewApplication(' +
+          app.id +
+          ", 'rejected')\">拒绝</button>" +
+          '<button class="btn btn-primary" onclick="reviewApplication(' +
+          app.id +
+          ", 'approved')\">通过</button>" +
+          "</div>" +
+          "</div>";
+
+        document.getElementById("reviewModal").style.display = "block";
+      }
+
+      function reviewApplication(applicationId, status) {
+        var remark = document.getElementById("reviewRemark")
+          ? document.getElementById("reviewRemark").value
+          : "";
+
+        fetch("/api/admin/applications/" + applicationId + "/review", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ status: status, remark: remark }),
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.success) {
+              alert(data.message);
+              closeReviewModal();
+              filterApplications();
+            } else {
+              alert(data.message);
+            }
+          });
+      }
+
+      function deleteApplication(applicationId) {
+        if (confirm("确定要删除这条申请记录吗？此操作不可恢复！")) {
+          fetch("/api/admin/applications/" + applicationId, {
+            method: "DELETE",
+            credentials: "include",
+          })
+            .then(function (response) {
+              return response.json();
+            })
+            .then(function (data) {
+              if (data.success) {
+                alert("申请删除成功");
+                filterApplications();
+                loadStats();
+              } else {
+                alert(data.message);
+              }
+            });
+        }
+      }
+
+      function loadAppointments() {
+        fetch("/api/admin/appointments", {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (appointments) {
+            allAppointments = appointments;
+            renderAppointmentsTable(appointments);
+          });
+      }
+
+      function renderAppointmentsTable(appointments) {
+        var tbody = document.getElementById("appointmentsTableBody");
+        if (appointments.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="8" style="text-align: center;">暂无预约数据</td></tr>';
+          return;
+        }
+
+        var html = "";
+        for (var i = 0; i < appointments.length; i++) {
+          var apt = appointments[i];
+          var statusText =
+            apt.status === "pending"
+              ? "待确认"
+              : apt.status === "confirmed"
+                ? "已确认"
+                : apt.status === "completed"
+                  ? "已完成"
+                  : "已取消";
+
+          html +=
+            "<tr>" +
+            "<td>" +
+            apt.id +
+            "</td>" +
+            "<td>" +
+            apt.cat_name +
+            " (" +
+            apt.code +
+            ")</td>" +
+            "<td>" +
+            apt.username +
+            "</td>" +
+            "<td>" +
+            apt.full_name +
+            "</td>" +
+            "<td>" +
+            apt.appointment_date +
+            "</td>" +
+            "<td>" +
+            apt.appointment_time +
+            "</td>" +
+            "<td>" +
+            '<select class="status-select status-' +
+            apt.status +
+            '" onchange="updateAppointmentStatus(' +
+            apt.id +
+            ', this.value)">' +
+            '<option value="pending"' +
+            (apt.status === "pending" ? " selected" : "") +
+            ">待确认</option>" +
+            '<option value="confirmed"' +
+            (apt.status === "confirmed" ? " selected" : "") +
+            ">已确认</option>" +
+            '<option value="completed"' +
+            (apt.status === "completed" ? " selected" : "") +
+            ">已完成</option>" +
+            '<option value="cancelled"' +
+            (apt.status === "cancelled" ? " selected" : "") +
+            ">已取消</option>" +
+            "</select>" +
+            "</td>" +
+            '<td class="action-btns">' +
+            '<button class="btn-view" onclick="showAppointmentDetail(' +
+            apt.id +
+            ')">详情</button>' +
+            '<button class="btn-edit" onclick="showEditAppointmentModal(' +
+            apt.id +
+            ", '" +
+            apt.appointment_date +
+            "', '" +
+            apt.appointment_time +
+            "', " +
+            apt.cat_id +
+            ')">修改时间</button>' +
+            '<button class="btn-delete" onclick="deleteAppointment(' +
+            apt.id +
+            ')">删除</button>' +
+            "</td>" +
+            "</tr>";
+        }
+        tbody.innerHTML = html;
+      }
+
+      function filterAppointments() {
+        var dateFilter = document.getElementById("appointmentDateFilter").value;
+        var statusFilter = document.getElementById(
+          "appointmentStatusFilter",
+        ).value;
+
+        var filtered = allAppointments.slice();
+
+        if (dateFilter) {
+          filtered = filtered.filter(function (apt) {
+            return apt.appointment_date === dateFilter;
+          });
+        }
+
+        if (statusFilter !== "all") {
+          filtered = filtered.filter(function (apt) {
+            return apt.status === statusFilter;
+          });
+        }
+
+        renderAppointmentsTable(filtered);
+      }
+
+      function updateAppointmentStatus(appointmentId, status) {
+        fetch("/api/admin/appointments/" + appointmentId + "/status", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ status: status }),
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.success) {
+              alert("预约状态更新成功");
+              loadAppointments();
+            } else {
+              alert(data.message);
+            }
+          });
+      }
+
+      function showAppointmentDetail(appointmentId) {
+        fetch("/api/admin/appointments/" + appointmentId, {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (apt) {
+            var statusText =
+              apt.status === "pending"
+                ? "待确认"
+                : apt.status === "confirmed"
+                  ? "已确认"
+                  : apt.status === "completed"
+                    ? "已完成"
+                    : "已取消";
+            var statusClass = "status-" + apt.status;
+
+            var appStatusText =
+              apt.application_status === "pending"
+                ? "待审核"
+                : apt.application_status === "approved"
+                  ? "已通过"
+                  : "已拒绝";
+            var appStatusClass = "status-" + apt.application_status;
+
+            var content = document.getElementById("appointmentDetailContent");
+            content.innerHTML =
+              '<div class="detail-card">' +
+              "<h3>预约信息</h3>" +
+              "<p><strong>预约ID：</strong> " +
+              apt.id +
+              "</p>" +
+              "<p><strong>猫咪：</strong> " +
+              apt.cat_name +
+              " (" +
+              apt.code +
+              ")</p>" +
+              "<p><strong>品种：</strong> " +
+              apt.breed +
+              "</p>" +
+              "<p><strong>种类：</strong> " +
+              apt.category +
+              "</p>" +
+              "<p><strong>预约日期：</strong> " +
+              apt.appointment_date +
+              "</p>" +
+              "<p><strong>时间段：</strong> " +
+              apt.appointment_time +
+              "</p>" +
+              '<p><strong>状态：</strong> <span class="status-badge ' +
+              statusClass +
+              '">' +
+              statusText +
+              "</span></p>" +
+              "<h3>领养人信息</h3>" +
+              "<p><strong>用户名：</strong> " +
+              apt.username +
+              "</p>" +
+              "<p><strong>邮箱：</strong> " +
+              (apt.email || "未提供") +
+              "</p>" +
+              "<p><strong>姓名：</strong> " +
+              apt.full_name +
+              "</p>" +
+              "<p><strong>年龄：</strong> " +
+              apt.age +
+              "</p>" +
+              "<p><strong>职业：</strong> " +
+              (apt.occupation || "未提供") +
+              "</p>" +
+              "<p><strong>住房：</strong> " +
+              apt.housing +
+              "</p>" +
+              "<p><strong>养宠经验：</strong> " +
+              (apt.pet_experience || "无") +
+              "</p>" +
+              "<p><strong>同意回访：</strong> " +
+              (apt.agree_visit ? "是" : "否") +
+              "</p>" +
+              "<p><strong>同意绝育：</strong> " +
+              (apt.agree_neuter ? "是" : "否") +
+              "</p>" +
+              '<p><strong>申请状态：</strong> <span class="status-badge ' +
+              appStatusClass +
+              '">' +
+              appStatusText +
+              "</span></p>" +
+              "</div>";
+
+            document.getElementById("appointmentDetailModal").style.display =
+              "block";
+          });
+      }
+
+      function showEditAppointmentModal(
+        appointmentId,
+        currentDate,
+        currentTime,
+        catId,
+      ) {
+        var today = new Date().toISOString().split("T")[0];
+        var content = document.getElementById("editAppointmentContent");
+        content.innerHTML =
+          '<div class="detail-card">' +
+          "<p><strong>当前预约时间：</strong> " +
+          currentDate +
+          " " +
+          currentTime +
+          "</p>" +
+          '<div class="form-group">' +
+          "<label>选择新日期：</label>" +
+          '<input type="date" id="editAppointmentDate" min="' +
+          today +
+          '" value="' +
+          currentDate +
+          '" class="date-input" onchange="loadEditTimeSlots(' +
+          catId +
+          ", '" +
+          currentTime +
+          "')\">" +
+          "</div>" +
+          '<div class="form-group">' +
+          "<label>选择新时间段：</label>" +
+          '<div class="time-slots" id="editTimeSlots">' +
+          '<p style="text-align: center; color: #666;">请选择日期</p>' +
+          "</div>" +
+          "</div>" +
+          '<div class="form-actions">' +
+          '<button class="btn btn-secondary" onclick="closeEditAppointmentModal()">取消</button>' +
+          '<button class="btn btn-primary" onclick="adminUpdateAppointment(' +
+          appointmentId +
+          ", " +
+          catId +
+          ')" id="updateAppointmentBtn" disabled>确认修改</button>' +
+          "</div>" +
+          "</div>";
+
+        document.getElementById("editAppointmentModal").style.display = "block";
+        loadEditTimeSlots(catId, currentTime);
+      }
+
+      function loadEditTimeSlots(catId, currentTime) {
+        var date = document.getElementById("editAppointmentDate").value;
+        var slotsContainer = document.getElementById("editTimeSlots");
+
+        fetch("/api/available_slots/" + catId + "?date=" + date, {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (slots) {
+            var html = "";
+            for (var i = 0; i < slots.length; i++) {
+              var slot = slots[i];
+              var isCurrent = slot.time === currentTime;
+              var slotClass = "";
+              if (slot.full && !isCurrent) slotClass += " full";
+              if (slot.available || isCurrent) slotClass += " available";
+
+              var capacityText =
+                slot.full && !isCurrent
+                  ? "已满"
+                  : "剩余" + (slot.max - slot.current) + "个名额";
+              var canSelect = (slot.available && !slot.full) || isCurrent;
+
+              html +=
+                '<div class="time-slot ' +
+                slotClass +
+                '" data-time="' +
+                slot.time +
+                '" onclick="' +
+                (canSelect ? "selectEditTimeSlot(this)" : "") +
+                '">' +
+                '<div class="time">' +
+                slot.time +
+                (isCurrent ? " (当前)" : "") +
+                "</div>" +
+                '<div class="capacity">' +
+                capacityText +
+                "</div>" +
+                "</div>";
+            }
+            slotsContainer.innerHTML = html;
+          });
+      }
+
+      function selectEditTimeSlot(element) {
+        var slots = document.querySelectorAll("#editTimeSlots .time-slot");
+        for (var i = 0; i < slots.length; i++) {
+          slots[i].classList.remove("selected");
+        }
+        element.classList.add("selected");
+        document.getElementById("updateAppointmentBtn").disabled = false;
+      }
+
+      function adminUpdateAppointment(appointmentId, catId) {
+        var selectedSlot = document.querySelector(
+          "#editTimeSlots .time-slot.selected",
+        );
+        var date = document.getElementById("editAppointmentDate").value;
+
+        if (!selectedSlot) {
+          alert("请选择时间段");
+          return;
+        }
+
+        var timeSlot = selectedSlot.getAttribute("data-time");
+
+        fetch("/api/admin/appointments/" + appointmentId, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            date: date,
+            time_slot: timeSlot,
+          }),
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.success) {
+              alert("预约修改成功");
+              closeEditAppointmentModal();
+              loadAppointments();
+            } else {
+              alert(data.message);
+            }
+          });
+      }
+
+      function deleteAppointment(appointmentId) {
+        if (confirm("确定要删除这条预约记录吗？")) {
+          fetch("/api/admin/appointments/" + appointmentId, {
+            method: "DELETE",
+            credentials: "include",
+          })
+            .then(function (response) {
+              return response.json();
+            })
+            .then(function (data) {
+              if (data.success) {
+                alert("预约删除成功");
+                loadAppointments();
+                loadStats();
+              } else {
+                alert(data.message);
+              }
+            });
+        }
+      }
+
+      function loadUsers() {
+        fetch("/api/admin/users", {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (users) {
+            allUsers = users;
+            renderUsersTable(users);
+          })
+          .catch(function (error) {
+            console.error("加载用户失败:", error);
+            document.getElementById("usersTableBody").innerHTML =
+              '<tr><td colspan="8" style="text-align: center; color: red;">加载用户失败</td></tr>';
+          });
+      }
+
+      function renderUsersTable(users) {
+        var tbody = document.getElementById("usersTableBody");
+        if (!users || users.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="8" style="text-align: center;">暂无用户</td></tr>';
+          return;
+        }
+
+        var html = "";
+        for (var i = 0; i < users.length; i++) {
+          var user = users[i];
+          var roleOptions =
+            '<option value="user"' +
+            (user.role === "user" ? " selected" : "") +
+            ">普通用户</option>" +
+            '<option value="admin"' +
+            (user.role === "admin" ? " selected" : "") +
+            ">管理员</option>";
+
+          html +=
+            "<tr>" +
+            "<td>" +
+            user.id +
+            "</td>" +
+            "<td>" +
+            user.username +
+            "</td>" +
+            "<td>" +
+            (user.email || "未设置") +
+            "</td>" +
+            "<td>" +
+            '<select class="role-select" onchange="updateUserRole(' +
+            user.id +
+            ', this.value)" ' +
+            (user.id == currentUserId ? "disabled" : "") +
+            ">" +
+            roleOptions +
+            "</select>" +
+            "</td>" +
+            "<td>" +
+            (user.application_count || 0) +
+            "</td>" +
+            "<td>" +
+            (user.appointment_count || 0) +
+            "</td>" +
+            "<td>" +
+            new Date(user.created_at).toLocaleString() +
+            "</td>" +
+            '<td class="action-btns">' +
+            '<button class="btn-view" onclick="showUserDetail(' +
+            user.id +
+            ')">详情</button>';
+
+          if (user.id != currentUserId) {
+            html +=
+              '<button class="btn-delete" onclick="deleteUser(' +
+              user.id +
+              ')">删除</button>';
+          }
+
+          html += "</td></tr>";
+        }
+        tbody.innerHTML = html;
+      }
+
+      function showUserDetail(userId) {
+        fetch("/api/admin/users/" + userId, {
+          credentials: "include",
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (user) {
+            var content = document.getElementById("userDetailContent");
+
+            var applicationsHtml = "";
+            if (user.applications && user.applications.length > 0) {
+              for (var i = 0; i < user.applications.length; i++) {
+                var app = user.applications[i];
+                var appStatusText =
+                  app.status === "pending"
+                    ? "待审核"
+                    : app.status === "approved"
+                      ? "已通过"
+                      : "已拒绝";
+                applicationsHtml +=
+                  '<div class="sub-item">' +
+                  "<p><strong>猫咪：</strong> " +
+                  app.cat_name +
+                  " (" +
+                  app.code +
+                  ")</p>" +
+                  '<p><strong>状态：</strong> <span class="status-badge status-' +
+                  app.status +
+                  '">' +
+                  appStatusText +
+                  "</span></p>" +
+                  "<p><strong>提交时间：</strong> " +
+                  new Date(app.submitted_at).toLocaleString() +
+                  "</p>" +
+                  "</div>";
+              }
+            } else {
+              applicationsHtml = "<p>暂无申请记录</p>";
+            }
+
+            var appointmentsHtml = "";
+            if (user.appointments && user.appointments.length > 0) {
+              for (var i = 0; i < user.appointments.length; i++) {
+                var apt = user.appointments[i];
+                var aptStatusText =
+                  apt.status === "pending"
+                    ? "待确认"
+                    : apt.status === "confirmed"
+                      ? "已确认"
+                      : apt.status === "completed"
+                        ? "已完成"
+                        : "已取消";
+                appointmentsHtml +=
+                  '<div class="sub-item">' +
+                  "<p><strong>猫咪：</strong> " +
+                  apt.cat_name +
+                  " (" +
+                  apt.code +
+                  ")</p>" +
+                  "<p><strong>时间：</strong> " +
+                  apt.appointment_date +
+                  " " +
+                  apt.appointment_time +
+                  "</p>" +
+                  '<p><strong>状态：</strong> <span class="status-badge status-' +
+                  apt.status +
+                  '">' +
+                  aptStatusText +
+                  "</span></p>" +
+                  "</div>";
+              }
+            } else {
+              appointmentsHtml = "<p>暂无预约记录</p>";
+            }
+
+            content.innerHTML =
+              '<div class="detail-card">' +
+              "<h3>基本信息</h3>" +
+              "<p><strong>用户ID：</strong> " +
+              user.id +
+              "</p>" +
+              "<p><strong>用户名：</strong> " +
+              user.username +
+              "</p>" +
+              "<p><strong>邮箱：</strong> " +
+              (user.email || "未设置") +
+              "</p>" +
+              '<p><strong>角色：</strong> <span class="role-badge ' +
+              user.role +
+              '">' +
+              (user.role === "admin" ? "管理员" : "普通用户") +
+              "</span></p>" +
+              "<p><strong>注册时间：</strong> " +
+              new Date(user.created_at).toLocaleString() +
+              "</p>" +
+              "<h3>领养申请记录</h3>" +
+              applicationsHtml +
+              "<h3>预约记录</h3>" +
+              appointmentsHtml +
+              "</div>";
+
+            document.getElementById("userDetailModal").style.display = "block";
+          });
+      }
+
+      function updateUserRole(userId, role) {
+        fetch("/api/admin/users/" + userId + "/role", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({ role: role }),
+        })
+          .then(function (response) {
+            return response.json();
+          })
+          .then(function (data) {
+            if (data.success) {
+              alert("用户角色更新成功");
+              loadUsers();
+            } else {
+              alert(data.message);
+            }
+          });
+      }
+
+      function deleteUser(userId) {
+        if (
+          confirm(
+            "确定要删除这个用户吗？此操作将同时删除该用户的所有申请和预约记录！",
+          )
+        ) {
+          fetch("/api/admin/users/" + userId, {
+            method: "DELETE",
+            credentials: "include",
+          })
+            .then(function (response) {
+              return response.json();
+            })
+            .then(function (data) {
+              if (data.success) {
+                alert("用户删除成功");
+                loadUsers();
+                loadStats();
+              } else {
+                alert(data.message);
+              }
+            });
+        }
+      }
+
+      function switchTab(tabName) {
+        var tabs = document.querySelectorAll(".tab-btn");
+        for (var i = 0; i < tabs.length; i++) {
+          tabs[i].classList.remove("active");
+        }
+
+        var panels = document.querySelectorAll(".tab-panel");
+        for (var i = 0; i < panels.length; i++) {
+          panels[i].classList.remove("active");
+        }
+
+        document
+          .querySelector(".tab-btn[onclick=\"switchTab('" + tabName + "')\"]")
+          .classList.add("active");
+        document.getElementById(tabName + "Tab").classList.add("active");
+      }
+
+      function closeCatModal() {
+        document.getElementById("catModal").style.display = "none";
+      }
+
+      function closeBatchCatModal() {
+        document.getElementById("batchCatModal").style.display = "none";
+      }
+
+      function closeReviewModal() {
+        document.getElementById("reviewModal").style.display = "none";
+      }
+
+      function closeApplicationDetailModal() {
+        document.getElementById("applicationDetailModal").style.display =
+          "none";
+      }
+
+      function closeAppointmentDetailModal() {
+        document.getElementById("appointmentDetailModal").style.display =
+          "none";
+      }
+
+      function closeEditAppointmentModal() {
+        document.getElementById("editAppointmentModal").style.display = "none";
+      }
+
+      function closeUserDetailModal() {
+        document.getElementById("userDetailModal").style.display = "none";
+      }
+
+      // 点击模态框外部关闭
+      window.onclick = function (event) {
+        if (event.target.classList.contains("modal")) {
+          event.target.style.display = "none";
+        }
+      };
+
+      // 初始化
+      checkLogin();
+    </script>
+  </body>
+</html>
