@@ -1,0 +1,961 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>流浪猫领养中心</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='main-style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo">
+        <span>🐱</span>
+        <span>流浪猫领养中心</span>
+      </div>
+      <div class="user-info">
+        <span class="user-role" id="userRole"></span>
+        <span id="username-display"></span>
+        <button class="btn btn-secondary" onclick="showMyApplications()">
+          我的申请
+        </button>
+        <button class="btn btn-secondary" onclick="showMyAppointments()">
+          我的预约
+        </button>
+        <button class="logout-btn" onclick="logout()">退出登录</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- 种类筛选栏 -->
+      <div class="filter-bar">
+        <span class="filter-label">种类筛选：</span>
+        <button class="filter-btn active" onclick="filterByCategory('')">
+          全部
+        </button>
+        <div id="categoryFilters"></div>
+      </div>
+
+      <div class="slider-container">
+        <div class="slider" id="slider"></div>
+        <button class="slider-btn prev-btn" onclick="changeSlide(-1)">❮</button>
+        <button class="slider-btn next-btn" onclick="changeSlide(1)">❯</button>
+        <div class="slider-dots" id="slider-dots"></div>
+      </div>
+
+      <h2 style="text-align: center; margin: 40px 0 20px; color: #764ba2">
+        待领养猫咪
+      </h2>
+
+      <div class="cats-grid" id="catsGrid"></div>
+    </div>
+
+    <!-- 猫咪详情模态框 -->
+    <div id="catModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <div id="catDetailContent"></div>
+      </div>
+    </div>
+
+    <!-- 领养申请模态框（新增/编辑） -->
+    <div id="applicationModal" class="modal">
+      <div class="modal-content modal-lg">
+        <span class="close-btn" onclick="closeApplicationModal()">&times;</span>
+        <h2
+          id="applicationModalTitle"
+          style="text-align: center; margin-bottom: 20px"
+        >
+          领养申请表
+        </h2>
+        <form
+          id="applicationForm"
+          onsubmit="
+            event.preventDefault();
+            saveApplication();
+          "
+        >
+          <input type="hidden" id="applicationId" />
+          <input type="hidden" id="applicationCatId" />
+
+          <div class="form-group">
+            <label>姓名 *</label>
+            <input
+              type="text"
+              id="fullName"
+              required
+              placeholder="请输入您的姓名"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>年龄 *</label>
+              <input
+                type="number"
+                id="age"
+                required
+                min="18"
+                max="100"
+                placeholder="年龄"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>职业</label>
+              <input type="text" id="occupation" placeholder="您的职业" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>住房情况 *</label>
+            <select id="housing" required>
+              <option value="">请选择住房情况</option>
+              <option value="自有住房">自有住房</option>
+              <option value="租房">租房</option>
+              <option value="与家人同住">与家人同住</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>养宠经验</label>
+            <textarea
+              id="petExperience"
+              rows="3"
+              placeholder="请描述您是否有养宠经验"
+            ></textarea>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="agreeVisit" value="true" />
+              同意接受回访 *
+            </label>
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="agreeNeuter" value="true" />
+              同意为猫咪做绝育 *
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeApplicationModal()"
+            >
+              取消
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="applicationSubmitBtn"
+            >
+              提交申请
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 我的申请模态框 -->
+    <div id="myApplicationsModal" class="modal">
+      <div class="modal-content modal-lg">
+        <span class="close-btn" onclick="closeMyApplicationsModal()"
+          >&times;</span
+        >
+        <h2 style="margin-bottom: 20px">我的领养申请</h2>
+        <div id="myApplicationsList"></div>
+      </div>
+    </div>
+
+    <!-- 预约模态框（新增） -->
+    <div id="appointmentModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeAppointmentModal()">&times;</span>
+        <div id="appointmentContent"></div>
+      </div>
+    </div>
+
+    <!-- 编辑预约模态框 -->
+    <div id="editAppointmentModal" class="modal">
+      <div class="modal-content">
+        <span class="close-btn" onclick="closeEditAppointmentModal()"
+          >&times;</span
+        >
+        <div id="editAppointmentContent"></div>
+      </div>
+    </div>
+
+    <!-- 我的预约模态框 -->
+    <div id="myAppointmentsModal" class="modal">
+      <div class="modal-content modal-lg">
+        <span class="close-btn" onclick="closeMyAppointmentsModal()"
+          >&times;</span
+        >
+        <h2 style="margin-bottom: 20px">我的预约</h2>
+        <div id="myAppointmentsList"></div>
+      </div>
+    </div>
+
+    <script>
+      let currentSlide = 0;
+      let cats = [];
+      let currentCat = null;
+      let categories = [];
+      let currentFilter = "";
+      let myApplications = [];
+      let myAppointments = [];
+
+      // 检查登录状态
+      checkLogin();
+
+      function checkLogin() {
+        fetch("/api/check_login", {
+          credentials: "include",
+        })
+          .then((response) => {
+            if (response.status === 401) {
+              window.location.href = "/";
+            }
+            return response.json();
+          })
+          .then((data) => {
+            if (data.success) {
+              document.getElementById("username-display").textContent =
+                data.username;
+              document.getElementById("userRole").textContent =
+                data.role === "admin" ? "管理员" : "领养人";
+
+              if (data.role === "admin") {
+                const adminBtn = document.createElement("button");
+                adminBtn.className = "admin-btn";
+                adminBtn.textContent = "管理后台";
+                adminBtn.onclick = () => (window.location.href = "/admin");
+                document.querySelector(".user-info").appendChild(adminBtn);
+              }
+
+              loadCategories();
+              loadCats();
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            window.location.href = "/";
+          });
+      }
+
+      function logout() {
+        fetch("/api/logout", {
+          method: "POST",
+          credentials: "include",
+        }).then(() => {
+          window.location.href = "/";
+        });
+      }
+
+      function loadCategories() {
+        fetch("/api/categories", {
+          credentials: "include",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            categories = data;
+            renderCategoryFilters();
+          });
+      }
+
+      function renderCategoryFilters() {
+        const container = document.getElementById("categoryFilters");
+        container.innerHTML = categories
+          .map(
+            (cat) =>
+              `<button class="filter-btn" onclick="filterByCategory('${cat}')">${cat}</button>`,
+          )
+          .join("");
+      }
+
+      function filterByCategory(category) {
+        currentFilter = category;
+
+        document.querySelectorAll(".filter-btn").forEach((btn) => {
+          btn.classList.remove("active");
+          if (
+            btn.textContent === category ||
+            (category === "" && btn.textContent === "全部")
+          ) {
+            btn.classList.add("active");
+          }
+        });
+
+        loadCats(category);
+      }
+
+      function loadCats(category = "") {
+        let url = "/api/cats";
+        if (category) {
+          url += `?category=${encodeURIComponent(category)}`;
+        }
+
+        fetch(url, {
+          credentials: "include",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            cats = data;
+            initSlider();
+            renderCatsGrid();
+          });
+      }
+
+      function initSlider() {
+        const slider = document.getElementById("slider");
+        const dotsContainer = document.getElementById("slider-dots");
+
+        slider.innerHTML = "";
+        dotsContainer.innerHTML = "";
+
+        if (cats.length === 0) {
+          slider.innerHTML =
+            '<div class="slide"><div class="slide-caption">暂无猫咪</div></div>';
+          return;
+        }
+
+        cats.forEach((cat, index) => {
+          const slide = document.createElement("div");
+          slide.className = "slide";
+          slide.onclick = () => showCatDetail(cat.id);
+          slide.innerHTML = `
+                    <img src="${cat.image_url}" alt="${cat.name}">
+                    <div class="slide-caption">${cat.name} - ${cat.breed}</div>
+                `;
+          slider.appendChild(slide);
+
+          const dot = document.createElement("span");
+          dot.className = "dot" + (index === 0 ? " active" : "");
+          dot.onclick = () => goToSlide(index);
+          dotsContainer.appendChild(dot);
+        });
+      }
+
+      function changeSlide(direction) {
+        if (cats.length === 0) return;
+        currentSlide += direction;
+        if (currentSlide < 0) currentSlide = cats.length - 1;
+        if (currentSlide >= cats.length) currentSlide = 0;
+        updateSlider();
+      }
+
+      function goToSlide(index) {
+        currentSlide = index;
+        updateSlider();
+      }
+
+      function updateSlider() {
+        const slider = document.getElementById("slider");
+        const dots = document.querySelectorAll(".dot");
+
+        slider.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+        dots.forEach((dot, index) => {
+          dot.classList.toggle("active", index === currentSlide);
+        });
+      }
+
+      function renderCatsGrid() {
+        const grid = document.getElementById("catsGrid");
+        if (cats.length === 0) {
+          grid.innerHTML =
+            '<p style="text-align: center; color: #666;">暂无猫咪</p>';
+          return;
+        }
+
+        grid.innerHTML = cats
+          .map(
+            (cat) => `
+                <div class="cat-card" onclick="showCatDetail(${cat.id})">
+                    <img src="${cat.image_url}" alt="${cat.name}">
+                    <div class="cat-info">
+                        <h3>${cat.name}</h3>
+                        <p>编号：${cat.code}</p>
+                        <p>品种：${cat.breed}</p>
+                        <p>年龄：${cat.age}</p>
+                        <p class="cat-category">#${cat.category}</p>
+                    </div>
+                </div>
+            `,
+          )
+          .join("");
+      }
+
+      function showCatDetail(catId) {
+        fetch(`/api/cats/${catId}`, {
+          credentials: "include",
+        })
+          .then((response) => response.json())
+          .then((cat) => {
+            currentCat = cat;
+            let actionButton = "";
+
+            if (cat.has_application) {
+              const statusText = {
+                pending: "审核中",
+                approved: "已通过",
+                rejected: "已拒绝",
+              }[cat.application_status];
+
+              actionButton = `
+                        <div class="application-status status-${cat.application_status}">
+                            <p>申请状态：${statusText}</p>
+                            ${
+                              cat.application_status === "approved"
+                                ? '<button class="adopt-btn" onclick="showAppointmentModal(' +
+                                  cat.id +
+                                  ')">预约看猫</button>'
+                                : ""
+                            }
+                            ${
+                              cat.application_status === "pending"
+                                ? '<button class="edit-btn" onclick="editApplication(' +
+                                  cat.application_id +
+                                  ')">修改申请</button>' +
+                                  '<button class="delete-btn" onclick="deleteApplication(' +
+                                  cat.application_id +
+                                  ')">撤销申请</button>'
+                                : ""
+                            }
+                        </div>
+                    `;
+            } else {
+              actionButton = `
+                        <button class="adopt-btn" onclick="showApplicationModal(${cat.id})">
+                            申请领养
+                        </button>
+                    `;
+            }
+
+            const content = document.getElementById("catDetailContent");
+            content.innerHTML = `
+                    <div class="cat-detail">
+                        <img src="${cat.image_url}" alt="${cat.name}">
+                        <h2>${cat.name}</h2>
+                        <p>编号：${cat.code}</p>
+                        <p>品种：${cat.breed}</p>
+                        <p>年龄：${cat.age}</p>
+                        <p>种类：${cat.category}</p>
+                        
+                        <div class="detail-item">
+                            <strong>性格特点：</strong>
+                            <p>${cat.personality}</p>
+                        </div>
+                        
+                        <div class="detail-item">
+                            <strong>生活习性：</strong>
+                            <p>${cat.habits}</p>
+                        </div>
+                        
+                        ${actionButton}
+                    </div>
+                `;
+            document.getElementById("catModal").style.display = "block";
+          });
+      }
+
+      function showApplicationModal(catId) {
+        closeModal();
+
+        document.getElementById("applicationModalTitle").textContent =
+          "领养申请表";
+        document.getElementById("applicationId").value = "";
+        document.getElementById("applicationCatId").value = catId;
+        document.getElementById("fullName").value = "";
+        document.getElementById("age").value = "";
+        document.getElementById("occupation").value = "";
+        document.getElementById("housing").value = "";
+        document.getElementById("petExperience").value = "";
+        document.getElementById("agreeVisit").checked = false;
+        document.getElementById("agreeNeuter").checked = false;
+        document.getElementById("applicationSubmitBtn").textContent =
+          "提交申请";
+
+        document.getElementById("applicationModal").style.display = "block";
+      }
+
+      function editApplication(applicationId) {
+        closeModal();
+
+        fetch(`/api/applications/${applicationId}`, {
+          credentials: "include",
+        })
+          .then((response) => response.json())
+          .then((app) => {
+            document.getElementById("applicationModalTitle").textContent =
+              "修改领养申请";
+            document.getElementById("applicationId").value = app.id;
+            document.getElementById("applicationCatId").value = app.cat_id;
+            document.getElementById("fullName").value = app.full_name;
+            document.getElementById("age").value = app.age;
+            document.getElementById("occupation").value = app.occupation || "";
+            document.getElementById("housing").value = app.housing;
+            document.getElementById("petExperience").value =
+              app.pet_experience || "";
+            document.getElementById("agreeVisit").checked =
+              app.agree_visit === 1;
+            document.getElementById("agreeNeuter").checked =
+              app.agree_neuter === 1;
+            document.getElementById("applicationSubmitBtn").textContent =
+              "保存修改";
+
+            document.getElementById("applicationModal").style.display = "block";
+          });
+      }
+
+      function saveApplication() {
+        const applicationId = document.getElementById("applicationId").value;
+        const catId = document.getElementById("applicationCatId").value;
+
+        const data = {
+          cat_id: catId,
+          full_name: document.getElementById("fullName").value,
+          age: document.getElementById("age").value,
+          occupation: document.getElementById("occupation").value,
+          housing: document.getElementById("housing").value,
+          pet_experience: document.getElementById("petExperience").value,
+          agree_visit: document.getElementById("agreeVisit").checked,
+          agree_neuter: document.getElementById("agreeNeuter").checked,
+        };
+
+        if (!data.full_name || !data.age || !data.housing) {
+          alert("请填写必填项");
+          return;
+        }
+
+        if (!data.agree_visit || !data.agree_neuter) {
+          alert("请同意回访和绝育条款");
+          return;
+        }
+
+        let url = "/api/applications";
+        let method = "POST";
+
+        if (applicationId) {
+          url = `/api/applications/${applicationId}`;
+          method = "PUT";
+        }
+
+        fetch(url, {
+          method: method,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(data),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              alert(applicationId ? "申请修改成功" : "申请提交成功");
+              closeApplicationModal();
+              if (currentCat) {
+                showCatDetail(currentCat.id);
+              }
+            } else {
+              alert(data.message);
+            }
+          });
+      }
+
+      function deleteApplication(applicationId) {
+        if (confirm("确定要撤销这个申请吗？")) {
+          fetch(`/api/applications/${applicationId}`, {
+            method: "DELETE",
+            credentials: "include",
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("申请已撤销");
+                if (currentCat) {
+                  showCatDetail(currentCat.id);
+                }
+              } else {
+                alert(data.message);
+              }
+            });
+        }
+      }
+
+      function showMyApplications() {
+        fetch("/api/my_applications", {
+          credentials: "include",
+        })
+          .then((response) => response.json())
+          .then((applications) => {
+            myApplications = applications;
+            const list = document.getElementById("myApplicationsList");
+
+            if (applications.length === 0) {
+              list.innerHTML =
+                '<p style="text-align: center; color: #666;">暂无申请记录</p>';
+            } else {
+              list.innerHTML = applications
+                .map(
+                  (app) => `
+                        <div class="application-card">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <img src="${app.image_url}" alt="${app.cat_name}" style="width: 60px; height: 60px; border-radius: 50%;">
+                                <div style="flex: 1;">
+                                    <h4>${app.cat_name} (${app.code}) - ${app.category}</h4>
+                                    <p>申请时间：${new Date(app.submitted_at).toLocaleString()}</p>
+                                    <p>姓名：${app.full_name} | 年龄：${app.age} | 住房：${app.housing}</p>
+                                    <p>职业：${app.occupation || "未提供"} | 养宠经验：${app.pet_experience || "无"}</p>
+                                    <p>同意回访：${app.agree_visit ? "是" : "否"} | 同意绝育：${app.agree_neuter ? "是" : "否"}</p>
+                                    <span class="status-badge status-${app.status}">
+                                        ${
+                                          app.status === "pending"
+                                            ? "待审核"
+                                            : app.status === "approved"
+                                              ? "已通过"
+                                              : "已拒绝"
+                                        }
+                                    </span>
+                                    ${app.admin_remark ? `<p class="remark">管理员备注：${app.admin_remark}</p>` : ""}
+                                </div>
+                                <div class="action-btns" style="display: flex; gap: 5px;">
+                                    ${
+                                      app.status === "pending"
+                                        ? `<button class="edit-btn" onclick="editApplication(${app.id})">修改</button>
+                                       <button class="delete-btn" onclick="deleteApplication(${app.id})">撤销</button>`
+                                        : ""
+                                    }
+                                    ${
+                                      app.status === "approved"
+                                        ? `<button class="adopt-btn-small" onclick="showAppointmentModal(${app.cat_id})">预约</button>`
+                                        : ""
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                )
+                .join("");
+            }
+
+            document.getElementById("myApplicationsModal").style.display =
+              "block";
+          });
+      }
+
+      function showAppointmentModal(catId) {
+        closeModal();
+        closeMyApplicationsModal();
+
+        const today = new Date().toISOString().split("T")[0];
+        const content = document.getElementById("appointmentContent");
+        content.innerHTML = `
+                <h2 style="text-align: center; margin-bottom: 20px;">预约看猫 - ${currentCat ? currentCat.name : ""}</h2>
+                
+                <div class="info-box">
+                    <p>您的领养申请已通过审核，可以预约线下看猫。</p>
+                    <p>每个时间段最多可预约5人，满员后将无法预约。</p>
+                </div>
+                
+                <label>选择日期：</label>
+                <input type="date" class="date-input" id="appointmentDate" min="${today}" value="${today}" onchange="loadTimeSlots(${catId})">
+                
+                <label>选择时间段：</label>
+                <div class="time-slots" id="timeSlots">
+                    <p style="text-align: center; color: #666;">请选择日期</p>
+                </div>
+                
+                <button class="adopt-btn" onclick="createAppointment(${catId})" id="confirmAppointmentBtn" disabled>
+                    确认预约
+                </button>
+            `;
+
+        document.getElementById("appointmentModal").style.display = "block";
+        loadTimeSlots(catId);
+      }
+
+      function loadTimeSlots(catId) {
+        const date = document.getElementById("appointmentDate").value;
+        const slotsContainer = document.getElementById("timeSlots");
+
+        fetch(`/api/available_slots/${catId}?date=${date}`, {
+          credentials: "include",
+        })
+          .then((response) => response.json())
+          .then((slots) => {
+            slotsContainer.innerHTML = slots
+              .map(
+                (slot) => `
+                    <div class="time-slot ${slot.full ? "full" : ""} ${slot.available ? "available" : "disabled"}" 
+                         data-time="${slot.time}"
+                         onclick="${slot.available && !slot.full ? "selectTimeSlot(this)" : ""}">
+                        <div class="time">${slot.time}</div>
+                        <div class="capacity">
+                            ${slot.full ? "已满" : `剩余${slot.max - slot.current}个名额`}
+                        </div>
+                    </div>
+                `,
+              )
+              .join("");
+          });
+      }
+
+      function selectTimeSlot(element) {
+        document
+          .querySelectorAll(".time-slot")
+          .forEach((s) => s.classList.remove("selected"));
+        element.classList.add("selected");
+        document.getElementById("confirmAppointmentBtn").disabled = false;
+      }
+
+      function createAppointment(catId) {
+        const selectedSlot = document.querySelector(".time-slot.selected");
+        const date = document.getElementById("appointmentDate").value;
+
+        if (!selectedSlot) {
+          alert("请选择时间段");
+          return;
+        }
+
+        const timeSlot = selectedSlot.dataset.time;
+
+        fetch("/api/appointments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            cat_id: catId,
+            date: date,
+            time_slot: timeSlot,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              alert("预约成功！");
+              closeAppointmentModal();
+            } else {
+              alert(data.message);
+            }
+          });
+      }
+
+      function showMyAppointments() {
+        fetch("/api/my_appointments", {
+          credentials: "include",
+        })
+          .then((response) => response.json())
+          .then((appointments) => {
+            myAppointments = appointments;
+            const list = document.getElementById("myAppointmentsList");
+
+            if (appointments.length === 0) {
+              list.innerHTML =
+                '<p style="text-align: center; color: #666;">暂无预约记录</p>';
+            } else {
+              list.innerHTML = appointments
+                .map(
+                  (apt) => `
+                        <div class="appointment-card">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <img src="${apt.image_url}" alt="${apt.cat_name}" style="width: 60px; height: 60px; border-radius: 50%;">
+                                <div style="flex: 1;">
+                                    <h4>${apt.cat_name} (${apt.code}) - ${apt.category}</h4>
+                                    <p>预约时间：${apt.appointment_date} ${apt.appointment_time}</p>
+                                    <p>领养人：${apt.full_name}</p>
+                                    <span class="status-badge status-${apt.status}">
+                                        ${
+                                          apt.status === "pending"
+                                            ? "待确认"
+                                            : apt.status === "confirmed"
+                                              ? "已确认"
+                                              : apt.status === "completed"
+                                                ? "已完成"
+                                                : "已取消"
+                                        }
+                                    </span>
+                                </div>
+                                <div class="action-btns" style="display: flex; gap: 5px;">
+                                    ${
+                                      apt.status === "pending" ||
+                                      apt.status === "confirmed"
+                                        ? `<button class="edit-btn" onclick="showEditAppointmentModal(${apt.id}, '${apt.appointment_date}', '${apt.appointment_time}', ${apt.cat_id})">修改</button>
+                                       <button class="delete-btn" onclick="cancelAppointment(${apt.id})">取消</button>`
+                                        : ""
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    `,
+                )
+                .join("");
+            }
+
+            document.getElementById("myAppointmentsModal").style.display =
+              "block";
+          });
+      }
+
+      function showEditAppointmentModal(
+        appointmentId,
+        currentDate,
+        currentTime,
+        catId,
+      ) {
+        closeMyAppointmentsModal();
+
+        const today = new Date().toISOString().split("T")[0];
+        const content = document.getElementById("editAppointmentContent");
+        content.innerHTML = `
+                <h2 style="text-align: center; margin-bottom: 20px;">修改预约</h2>
+                
+                <div class="info-box">
+                    <p>当前预约时间：${currentDate} ${currentTime}</p>
+                </div>
+                
+                <label>选择新日期：</label>
+                <input type="date" class="date-input" id="editAppointmentDate" min="${today}" value="${currentDate}" onchange="loadEditTimeSlots(${catId}, '${currentTime}')">
+                
+                <label>选择新时间段：</label>
+                <div class="time-slots" id="editTimeSlots">
+                    <p style="text-align: center; color: #666;">请选择日期</p>
+                </div>
+                
+                <button class="adopt-btn" onclick="updateAppointment(${appointmentId}, ${catId})" id="updateAppointmentBtn" disabled>
+                    确认修改
+                </button>
+            `;
+
+        document.getElementById("editAppointmentModal").style.display = "block";
+        loadEditTimeSlots(catId, currentTime);
+      }
+
+      function loadEditTimeSlots(catId, currentTime) {
+        const date = document.getElementById("editAppointmentDate").value;
+        const slotsContainer = document.getElementById("editTimeSlots");
+
+        fetch(`/api/available_slots/${catId}?date=${date}`, {
+          credentials: "include",
+        })
+          .then((response) => response.json())
+          .then((slots) => {
+            slotsContainer.innerHTML = slots
+              .map((slot) => {
+                const isCurrent = slot.time === currentTime;
+                return `
+                        <div class="time-slot ${slot.full && !isCurrent ? "full" : ""} ${slot.available || isCurrent ? "available" : "disabled"}" 
+                             data-time="${slot.time}"
+                             onclick="${(slot.available && !slot.full) || isCurrent ? "selectEditTimeSlot(this)" : ""}">
+                            <div class="time">${slot.time} ${isCurrent ? "(当前)" : ""}</div>
+                            <div class="capacity">
+                                ${slot.full && !isCurrent ? "已满" : `剩余${slot.max - slot.current}个名额`}
+                            </div>
+                        </div>
+                    `;
+              })
+              .join("");
+          });
+      }
+
+      function selectEditTimeSlot(element) {
+        document
+          .querySelectorAll("#editTimeSlots .time-slot")
+          .forEach((s) => s.classList.remove("selected"));
+        element.classList.add("selected");
+        document.getElementById("updateAppointmentBtn").disabled = false;
+      }
+
+      function updateAppointment(appointmentId, catId) {
+        const selectedSlot = document.querySelector(
+          "#editTimeSlots .time-slot.selected",
+        );
+        const date = document.getElementById("editAppointmentDate").value;
+
+        if (!selectedSlot) {
+          alert("请选择时间段");
+          return;
+        }
+
+        const timeSlot = selectedSlot.dataset.time;
+
+        fetch(`/api/appointments/${appointmentId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            date: date,
+            time_slot: timeSlot,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              alert("预约修改成功");
+              closeEditAppointmentModal();
+              showMyAppointments();
+            } else {
+              alert(data.message);
+            }
+          });
+      }
+
+      function cancelAppointment(appointmentId) {
+        if (confirm("确定要取消这个预约吗？")) {
+          fetch(`/api/appointments/${appointmentId}`, {
+            method: "DELETE",
+            credentials: "include",
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("预约已取消");
+                showMyAppointments();
+              } else {
+                alert(data.message);
+              }
+            });
+        }
+      }
+
+      function closeModal() {
+        document.getElementById("catModal").style.display = "none";
+      }
+
+      function closeApplicationModal() {
+        document.getElementById("applicationModal").style.display = "none";
+      }
+
+      function closeMyApplicationsModal() {
+        document.getElementById("myApplicationsModal").style.display = "none";
+      }
+
+      function closeAppointmentModal() {
+        document.getElementById("appointmentModal").style.display = "none";
+      }
+
+      function closeEditAppointmentModal() {
+        document.getElementById("editAppointmentModal").style.display = "none";
+      }
+
+      function closeMyAppointmentsModal() {
+        document.getElementById("myAppointmentsModal").style.display = "none";
+      }
+
+      setInterval(() => {
+        changeSlide(1);
+      }, 5000);
+    </script>
+  </body>
+</html>
